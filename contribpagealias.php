@@ -177,7 +177,7 @@ function contribpagealias_civicrm_alterEntitySettingsFolders(&$folders) {
 }
 
 function contribpagealias_civicrm_pre($op, $objectName, $id, &$params) {
-  watchdog('alias', 'op: %op obj: %obj', array('%op'=>$op, '%obj'=>$objectName), WATCHDOG_DEBUG);
+  watchdog('alias', 'PRE: op: %op obj: %obj', array('%op'=>$op, '%obj'=>$objectName), WATCHDOG_DEBUG);
   if (!($objectName == 'ContributionPage')) {
     return;
   }
@@ -187,12 +187,20 @@ function contribpagealias_civicrm_pre($op, $objectName, $id, &$params) {
 
   // Create the alias
   if ($op == 'edit') {
-    // If the alias already exists we simply finish
-    if (drupal_lookup_path('source', $alias)) {
-      return;
-    }
-    $path = array('source'=> $source, 'alias' => $alias);
-    path_save($path);
+    // Check if an alias already exists
+    $path = path_load($source);
+    if ($path) {
+      // It's the same, no action
+      if ($path['alias'] == $alias) {
+        return;
+      }
+      // It's different, so delete the existing
+      path_delete($path['pid']);
+      }
+
+    // Create new alias
+    $newPath = array('source'=> $source, 'alias' => $alias);
+    path_save($newPath);
     return;
   }
 
@@ -207,10 +215,16 @@ function contribpagealias_civicrm_pre($op, $objectName, $id, &$params) {
 }
 
 function contribpagealias_civicrm_post($op, $objectName, $id, &$params) {
-  if ($op == 'create' && $objectName == 'ContributionPage') {
-    watchdog('alias', 'pars: %p', array('%p'=>print_r($params,TRUE)), WATCHDOG_DEBUG);
+  watchdog('alias', 'POST: op: %op obj: %obj', array('%op'=>$op, '%obj'=>$objectName), WATCHDOG_DEBUG);
+  if ($op == 'delete' && $objectName == 'ContributionPage') {
+    $path = path_load($source);
+    if ($path) {
+      path_delete($path['pid']);
+    }
   }
+  return;
 }
+
 
 function contribpagealias_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
   if ($formName == "CRM_Contribute_Form_ContributionPage_Settings") {
