@@ -10,6 +10,11 @@ use CRM_Contribpagealias_ExtensionUtil as E;
  */
 function contribpagealias_civicrm_config(&$config) {
   _contribpagealias_civix_civicrm_config($config);
+
+  // Register Symfony listeners for CiviCRM hooks
+  Civi::service('dispatcher')->addListener('civi.dao.postDelete', 'contribpagealias_symfony_civicrm_postDelete', -100);
+//  Civi::service('dispatcher')->addListener('hook_civicrm_validateForm', 'contribpagealias_symfony_civicrm_validateForm', -100);
+//  Civi::service('dispatcher')->addListener('hook_civicrm_pre', 'contribpagealias_symfony_civicrm_pre', -100);
 }
 
 /**
@@ -177,7 +182,6 @@ function contribpagealias_civicrm_alterEntitySettingsFolders(&$folders) {
 }
 
 function contribpagealias_civicrm_pre($op, $objectName, $id, &$params) {
-  watchdog('alias', 'PRE: op: %op obj: %obj', array('%op'=>$op, '%obj'=>$objectName), WATCHDOG_DEBUG);
   if (!($objectName == 'ContributionPage')) {
     return;
   }
@@ -214,15 +218,23 @@ function contribpagealias_civicrm_pre($op, $objectName, $id, &$params) {
   return;
 }
 
-function contribpagealias_civicrm_post($op, $objectName, $id, &$params) {
-  watchdog('alias', 'POST: op: %op obj: %obj', array('%op'=>$op, '%obj'=>$objectName), WATCHDOG_DEBUG);
-  if ($op == 'delete' && $objectName == 'ContributionPage') {
+function contribpagealias_symfony_civicrm_postDelete($event) {
+  $obj =& $event->object;
+  if (get_class($obj) == 'CRM_Contribute_DAO_ContributionPage') {
+    $pageId = $obj->id;
+    // Delete URL alias if one exists
+    $source = 'civicrm/contribute/transact?id=' . $pageId . '&reset=1';
     $path = path_load($source);
     if ($path) {
       path_delete($path['pid']);
     }
+    // Delete EntitySetting record
+    $result = civicrm_api3('entity_setting', 'delete', array(
+      'entity_id' => $pageId,
+      'entity_type' => 'contribution_page',
+      'key' => 'au.org.greens.contribpagealias',
+    ));
   }
-  return;
 }
 
 
@@ -243,5 +255,18 @@ function contribpagealias_civicrm_validateForm($formName, &$fields, &$files, &$f
         }
       }
     }
+  }
+}
+
+function _contribpagealias_get_alias($formId) {
+  $result = civicrm_api3('entity_setting', 'get', array(
+    'entity_id' => $formId,
+    'entity_type' => 'contribution_page',
+    'key' => 'au.org.greens.contribpagealias',
+  ));
+  if (!empty($result['values'][$formId]['url_alias'])) {
+    return $result['values'][$formId]['url_alias'];
+  } else {
+    return "";
   }
 }
