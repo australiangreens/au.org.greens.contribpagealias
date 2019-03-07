@@ -10,6 +10,11 @@ use CRM_Contribpagealias_ExtensionUtil as E;
  */
 function contribpagealias_civicrm_config(&$config) {
   _contribpagealias_civix_civicrm_config($config);
+
+  // Register Symfony listeners for CiviCRM hooks
+  Civi::service('dispatcher')->addListener('civi.dao.postDelete', 'contribpagealias_symfony_civicrm_postDelete', -100);
+  Civi::service('dispatcher')->addListener('hook_civicrm_validateForm', 'contribpagealias_symfony_civicrm_validateForm', -100);
+  Civi::service('dispatcher')->addListener('hook_civicrm_pre', 'contribpagealias_symfony_civicrm_pre', -100);
 }
 
 /**
@@ -176,17 +181,10 @@ function contribpagealias_civicrm_alterEntitySettingsFolders(&$folders) {
   }
 }
 
-function contribpagealias_civicrm_pre($op, $objectName, $id, &$params) {
-  watchdog('alias', 'PRE: op: %op obj: %obj', array('%op'=>$op, '%obj'=>$objectName), WATCHDOG_DEBUG);
-  if (!($objectName == 'ContributionPage')) {
-    return;
-  }
-
-  $alias = $params['au-org-greens-contribpagealias__url_alias'];
-  $source = 'civicrm/contribute/transact?id=' . $id . '&reset=1';
-
-  // Create the alias
-  if ($op == 'edit') {
+function contribpagealias_symfony_civicrm_pre($event) {
+  if ( $event->action == 'edit' && $event->entity == 'ContributionPage') {
+    $alias = $event->params['au-org-greens-contribpagealias__url_alias'];
+    $source = 'civicrm/contribute/transact?id=' . $event->id . '&reset=1';
     // Check if an alias already exists
     $path = path_load($source);
     if ($path) {
@@ -196,40 +194,39 @@ function contribpagealias_civicrm_pre($op, $objectName, $id, &$params) {
       }
       // It's different, so delete the existing
       path_delete($path['pid']);
-      }
+    }
 
-    // Create new alias
-    $newPath = array('source'=> $source, 'alias' => $alias);
-    path_save($newPath);
-    return;
-  }
-
-  // If we're deleting the page, we should delete the alias
-  if ($op == 'delete') {
-    $path = path_load($source);
-    if ($path) {
-      path_delete($path['pid']);
+    if (!empty($alias)) {
+      // If alias isn't empty, create new alias
+      $newPath = array('source'=> $source, 'alias' => $alias);
+      path_save($newPath);
     }
   }
   return;
 }
 
-function contribpagealias_civicrm_post($op, $objectName, $id, &$params) {
-  watchdog('alias', 'POST: op: %op obj: %obj', array('%op'=>$op, '%obj'=>$objectName), WATCHDOG_DEBUG);
-  if ($op == 'delete' && $objectName == 'ContributionPage') {
+function contribpagealias_symfony_civicrm_postDelete($event) {
+  $obj =& $event->object;
+  if (get_class($obj) == 'CRM_Contribute_DAO_ContributionPage') {
+    $pageId = $obj->id;
+    // Delete URL alias if one exists
+    $source = 'civicrm/contribute/transact?id=' . $pageId . '&reset=1';
     $path = path_load($source);
     if ($path) {
       path_delete($path['pid']);
     }
+    // Delete EntitySetting record
+    $result = civicrm_api3('entity_setting', 'delete', array(
+      'entity_id' => $pageId,
+      'entity_type' => 'contribution_page',
+      'key' => 'au.org.greens.contribpagealias',
+    ));
   }
-  return;
 }
 
-
-function contribpagealias_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
-  if ($formName == "CRM_Contribute_Form_ContributionPage_Settings") {
-    $alias = $fields['au-org-greens-contribpagealias__url_alias'];
-    // Trim any leading slashes
+function contribpagealias_symfony_civicrm_validateForm($event) {
+  if ($event->formName == "CRM_Contribute_Form_ContributionPage_Settings") {
+    $alias = $event->fields['au-org-greens-contribpagealias__url_alias'];
     if (preg_match('/^(\/)+(.*)/', $alias, $matches)) {
       $alias = $matches[2];
     }
@@ -238,8 +235,8 @@ function contribpagealias_civicrm_validateForm($formName, &$fields, &$files, &$f
       $aliasSource = drupal_lookup_path('source', $alias);
       if (!empty($aliasSource) && preg_match('/id=([0-9]+)/', $aliasSource, $matches)) {
         // If the alias is used for another form, throw an error
-        if (!($form->getVar('_id') == $matches[1])) {
-          $errors['au-org-greens-contribpagealias__url_alias'] = ts('Alias already in use');
+        if (!($event->form->getVar('_id') == $matches[1])) {
+          $event->errors['au-org-greens-contribpagealias__url_alias'] = ts('Alias already in use');
         }
       }
     }
