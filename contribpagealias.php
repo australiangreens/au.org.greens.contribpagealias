@@ -183,20 +183,21 @@ function contribpagealias_civicrm_alterEntitySettingsFolders(&$folders) {
 
 function contribpagealias_symfony_civicrm_pre($event) {
   if ( $event->action == 'edit' && $event->entity == 'ContributionPage') {
-    if (!empty($alias = $event->params['au-org-greens-contribpagealias__url_alias'])) {
-      $source = 'civicrm/contribute/transact?id=' . $event->id . '&reset=1';
-      // Check if an alias already exists
-      $path = path_load($source);
-      if ($path) {
-        // It's the same, no action
-        if ($path['alias'] == $alias) {
-          return;
-        }
-        // It's different, so delete the existing
-        path_delete($path['pid']);
-        }
+    $alias = $event->params['au-org-greens-contribpagealias__url_alias'];
+    $source = 'civicrm/contribute/transact?id=' . $event->id . '&reset=1';
+    // Check if an alias already exists
+    $path = path_load($source);
+    if ($path) {
+      // It's the same, no action
+      if ($path['alias'] == $alias) {
+        return;
+      }
+      // It's different, so delete the existing
+      path_delete($path['pid']);
+    }
 
-      // Create new alias
+    if (!empty($alias)) {
+      // If alias isn't empty, create new alias
       $newPath = array('source'=> $source, 'alias' => $alias);
       path_save($newPath);
     }
@@ -239,18 +240,5 @@ function contribpagealias_symfony_civicrm_validateForm($event) {
         }
       }
     }
-  }
-}
-
-function _contribpagealias_get_alias($formId) {
-  $result = civicrm_api3('entity_setting', 'get', array(
-    'entity_id' => $formId,
-    'entity_type' => 'contribution_page',
-    'key' => 'au.org.greens.contribpagealias',
-  ));
-  if (!empty($result['values'][$formId]['url_alias'])) {
-    return $result['values'][$formId]['url_alias'];
-  } else {
-    return "";
   }
 }
