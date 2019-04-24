@@ -1,4 +1,4 @@
-# au.org.greens.trackpaypal
+# au.org.greens.contribpagealias
 
 ![Screenshot](/images/screenshot.png)
 
