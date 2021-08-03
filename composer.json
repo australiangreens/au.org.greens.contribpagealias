@@ -1,10 +1,8 @@
 {
-     "name": "australian_greens/au.org.greens.contribpagealias",
-     "type": "drupal-module",
-     "description": "Australian Greens Exension for creating page aliases for contribution pages",
-     "require": {
-       "composer/installers": "~1.0",
-       "drupal/drupal": "~7"
-     }
-
+   "name": "australian_greens/au.org.greens.contribpagealias",
+   "type": "civicrm-ext",
+   "description": "Australian Greens Extension for creating page aliases for contribution pages",
+   "require": {
+     "composer/installers": "^1.6"
+   }
 }
