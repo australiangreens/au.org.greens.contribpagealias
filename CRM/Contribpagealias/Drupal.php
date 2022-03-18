@@ -2,32 +2,32 @@
 
 class CRM_Contribpagealias_Drupal {
 
-  public static function pre($source, $alias): void {
+  public static function pre($path, $alias): void {
     // Check if an alias already exists
-    $path = path_load($source);
-      if ($path) {
-        // It's the same, no action
-        if ($path['alias'] == $alias) {
+    $path_alias = path_load($path);
+      if ($path_alias) {
+        // If it's the same, no action
+        if ($path_alias['alias'] == $alias) {
           return;
         }
         // It's different, so delete the existing
-        path_delete($path['pid']);
+        path_delete($path_alias['pid']);
       }
 
       if (!empty($alias)) {
         // If alias isn't empty, create new alias
-        $newPath = array('source'=> $source, 'alias' => $alias);
-        path_save($newPath);
+        $new_path = ['source'=> $path, 'alias' => $alias];
+        path_save($new_path);
     }
   }
 
-  public static function postDelete($source): void {
-    $path = path_load($source);
-    if ($path) {
-      path_delete($path['pid']);
+  public static function postDelete($path): void {
+    $path_alias = path_load($path);
+    if ($path_alias) {
+      path_delete($path_alias['pid']);
     }
   }
 
-  public static function getSource($alias): string {
-    return drupal_lookup_path('source', $alias);}
+  public static function getPath($alias): string {
+    return drupal_lookup_path('path', $alias);}
 }
