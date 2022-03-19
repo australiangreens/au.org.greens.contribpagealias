@@ -3,13 +3,14 @@
 class CRM_Contribpagealias_Drupal8 {
 
   public static function pre($path, $alias): void {
+    $path = '/' . $path;
     $alias_exists = FALSE;
     // Get default langcode
     $langcode = Drupal::service('language.default')->get()->getId();
     // Check if the alias already exists
     $existing_aliases = \Drupal::entityTypeManager()->getStorage('path_alias')->loadByProperties(['path' => $path]);
     if (!empty($existing_aliases)) {
-      forach ($existing_aliases as $existing_alias) {
+      foreach ($existing_aliases as $existing_alias) {
         if ($existing_alias->getAlias() == $alias) {
           $alias_exists = TRUE;
           break;
@@ -35,6 +36,7 @@ class CRM_Contribpagealias_Drupal8 {
    * @path string
    */
   public static function postDelete($path): void {
+    $path = '.' . $path;
     $existing_aliases = \Drupal::entityTypeManager()->getStorage('path_alias')->loadByProperties(['path' => $path]);
     foreach ($existing_aliases as $alias) {
       \Drupal::entityTypeManager()->getStorage('path_alias')->delete([$alias]);
