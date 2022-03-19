@@ -21,7 +21,7 @@
     <ver>5.8</ver>
   </compatibility>
   <requires>
-    <ext>nz.co.fuzion.entitysettings</ext>
+    <ext>nz.co.fuzion.entitysetting</ext>
   </requires>
   <comments>This module may have some bugs but is considered ready for broad use</comments>
   <civix>

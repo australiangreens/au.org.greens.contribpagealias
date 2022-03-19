@@ -29,5 +29,5 @@ class CRM_Contribpagealias_Drupal {
   }
 
   public static function getPath($alias): string {
-    return drupal_lookup_path('path', $alias);}
+    return drupal_lookup_path('source', $alias);}
 }

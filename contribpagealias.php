@@ -224,7 +224,7 @@ function contribpagealias_symfony_civicrm_validateForm($event) {
   if ($event->formName == "CRM_Contribute_Form_ContributionPage_Settings") {
     $matches = [];
     $alias = $event->fields['au-org-greens-contribpagealias__url_alias'];
-    if (preg_match('/^(\/)+(.*)/', $alias, $matches)) {
+    if (preg_match('/^(\/)*(.*)/', $alias, $matches)) {
       $alias = $matches[2];
     }
     if (!empty($alias)) {
