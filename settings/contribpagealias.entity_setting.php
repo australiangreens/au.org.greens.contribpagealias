@@ -8,8 +8,8 @@
  * Settings metadata file
  */
 
-return array(
-  array(
+return [
+  [
     'key' => 'au.org.greens.contribpagealias',
     'entity' => 'contribution_page',
     'name' => 'url_alias',
@@ -21,5 +21,5 @@ return array(
     'help_text' => 'Contribution pages can be configured to have a more human readable URL alias or path, such as /qld/donate, /act/support-tim-hollo, etc.',
     'add_to_setting_form' => TRUE,
     'form_child_of_parents_parent' => 'is_confirm_enabled',
-  ),
-);
+  ],
+];

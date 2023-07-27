@@ -184,22 +184,15 @@ function contribpagealias_civicrm_alterEntitySettingsFolders(&$folders) {
 function contribpagealias_symfony_civicrm_pre($event) {
   if ( $event->action == 'edit' && $event->entity == 'ContributionPage') {
     $alias = $event->params['au-org-greens-contribpagealias__url_alias'];
-    $source = 'civicrm/contribute/transact?id=' . $event->id . '&reset=1';
-    // Check if an alias already exists
-    $path = path_load($source);
-    if ($path) {
-      // It's the same, no action
-      if ($path['alias'] == $alias) {
-        return;
-      }
-      // It's different, so delete the existing
-      path_delete($path['pid']);
-    }
-
-    if (!empty($alias)) {
-      // If alias isn't empty, create new alias
-      $newPath = array('source'=> $source, 'alias' => $alias);
-      path_save($newPath);
+    $path = 'civicrm/contribute/transact?id=' . $event->id . '&reset=1';
+    // Switch on CMS version to call appropriate code
+    switch (CRM_Core_Config::singleton()->userFramework) {
+      case "Drupal": 
+        CRM_Contribpagealias_Drupal::pre($path, $alias);
+        break;
+      case "Drupal8":
+        CRM_Contribpagealias_Drupal8::pre($path, $alias);
+        break;
     }
   }
   return;
@@ -210,30 +203,42 @@ function contribpagealias_symfony_civicrm_postDelete($event) {
   if (get_class($obj) == 'CRM_Contribute_DAO_ContributionPage') {
     $pageId = $obj->id;
     // Delete URL alias if one exists
-    $source = 'civicrm/contribute/transact?id=' . $pageId . '&reset=1';
-    $path = path_load($source);
-    if ($path) {
-      path_delete($path['pid']);
+    $path = 'civicrm/contribute/transact?id=' . $pageId . '&reset=1';
+    switch (CRM_Core_Config::singleton()->userFramework) {
+      case "Drupal":
+        CRM_Contribpagealias_Drupal::postDelete($path);
+        break;
+      case "Drupal8":
+        CRM_Contribpagealias_Drupal8::postDelete($path);
+        break;
     }
-    // Delete EntitySetting record
-    $result = civicrm_api3('entity_setting', 'delete', array(
+    $result = civicrm_api3('entity_setting', 'delete', [
       'entity_id' => $pageId,
       'entity_type' => 'contribution_page',
       'key' => 'au.org.greens.contribpagealias',
-    ));
+    ]);
   }
 }
 
 function contribpagealias_symfony_civicrm_validateForm($event) {
   if ($event->formName == "CRM_Contribute_Form_ContributionPage_Settings") {
+    $matches = [];
     $alias = $event->fields['au-org-greens-contribpagealias__url_alias'];
-    if (preg_match('/^(\/)+(.*)/', $alias, $matches)) {
+    if (preg_match('/^(\/)*(.*)/', $alias, $matches)) {
       $alias = $matches[2];
     }
     if (!empty($alias)) {
       // Does the alias already exist
-      $aliasSource = drupal_lookup_path('source', $alias);
-      if (!empty($aliasSource) && preg_match('/id=([0-9]+)/', $aliasSource, $matches)) {
+      $path = "";
+      switch (CRM_Core_Config::singleton()->userFramework) {
+        case "Drupal":
+          $path = CRM_Contribpagealias_Drupal::getPath($alias);
+          break;
+        case "Drupal8":
+          $path = CRM_Contribpagealias_Drupal8::getPath($alias);
+          break;
+        }
+      if (!empty($path) && preg_match('/id=([0-9]+)/', $path, $matches)) {
         // If the alias is used for another form, throw an error
         if (!($event->form->getVar('_id') == $matches[1])) {
           $event->errors['au-org-greens-contribpagealias__url_alias'] = ts('Alias already in use');
