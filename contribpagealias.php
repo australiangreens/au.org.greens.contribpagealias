@@ -184,14 +184,15 @@ function contribpagealias_civicrm_alterEntitySettingsFolders(&$folders) {
 function contribpagealias_symfony_civicrm_pre($event) {
   if ( $event->action == 'edit' && $event->entity == 'ContributionPage') {
     $alias = $event->params['au-org-greens-contribpagealias__url_alias'];
-    $path = 'civicrm/contribute/transact?id=' . $event->id . '&reset=1';
+    $path = 'civicrm/contribute/transact';
+    $pathParms = 'id=' . $event->id . '&reset=1';
     // Switch on CMS version to call appropriate code
     switch (CRM_Core_Config::singleton()->userFramework) {
       case "Drupal": 
-        CRM_Contribpagealias_Drupal::pre($path, $alias);
+        CRM_Contribpagealias_Drupal::pre($path, $alias, $pathParams);
         break;
       case "Drupal8":
-        CRM_Contribpagealias_Drupal8::pre($path, $alias);
+        CRM_Contribpagealias_Drupal8::pre($path, $alias, $pathParams);
         break;
     }
   }
@@ -203,13 +204,14 @@ function contribpagealias_symfony_civicrm_postDelete($event) {
   if (get_class($obj) == 'CRM_Contribute_DAO_ContributionPage') {
     $pageId = $obj->id;
     // Delete URL alias if one exists
-    $path = 'civicrm/contribute/transact?id=' . $pageId . '&reset=1';
+    $path = 'civicrm/contribute/transact';
+    $pathParams = 'id=' . $pageId . '&reset=1';
     switch (CRM_Core_Config::singleton()->userFramework) {
       case "Drupal":
-        CRM_Contribpagealias_Drupal::postDelete($path);
+        CRM_Contribpagealias_Drupal::postDelete($path, $pathParams);
         break;
       case "Drupal8":
-        CRM_Contribpagealias_Drupal8::postDelete($path);
+        CRM_Contribpagealias_Drupal8::postDelete($path, $pathParams);
         break;
     }
     $result = civicrm_api3('entity_setting', 'delete', [

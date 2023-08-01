@@ -2,8 +2,8 @@
 
 class CRM_Contribpagealias_Drupal8 {
 
-  public static function pre($path, $alias): void {
-    $path = '/' . $path;
+  public static function pre(string $path, string $alias, string $pathParams): void {
+    $path = '/' . $path . '/?' . $pathParms;
     if ($alias <> '') {
       $alias = (substr($alias, 0, 1) === '/') ? $alias : '/' . $alias;
     }
@@ -39,8 +39,8 @@ class CRM_Contribpagealias_Drupal8 {
    *
    * @path string
    */
-  public static function postDelete($path): void {
-    $path = '/' . $path;
+  public static function postDelete(string $path, string $pathParams): void {
+    $path = '/' . $path . '/?' . $pathParams;
     $existing_aliases = \Drupal::entityTypeManager()->getStorage('path_alias')->loadByProperties(['path' => $path]);
     foreach ($existing_aliases as $alias) {
       \Drupal::entityTypeManager()->getStorage('path_alias')->delete([$alias]);
@@ -48,7 +48,7 @@ class CRM_Contribpagealias_Drupal8 {
     return;
   }
 
-  public static function getPath($alias): string {
+  public static function getPath(string $alias): string {
     $alias = (substr($alias, 0, 1) === '/') ? $alias : '/' . $alias;
     $existing_aliases = \Drupal::entityTypeManager()->getStorage('path_alias')->loadByProperties(['alias' => $alias]);
     if (!empty($existing_aliases)) {
