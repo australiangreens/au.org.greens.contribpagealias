@@ -184,16 +184,18 @@ function contribpagealias_civicrm_alterEntitySettingsFolders(&$folders) {
 function contribpagealias_symfony_civicrm_pre($event) {
   if ( $event->action == 'edit' && $event->entity == 'ContributionPage') {
     $alias = $event->params['au-org-greens-contribpagealias__url_alias'];
-    $path = 'civicrm/contribute/transact';
-    $pathParms = 'id=' . $event->id . '&reset=1';
-    // Switch on CMS version to call appropriate code
-    switch (CRM_Core_Config::singleton()->userFramework) {
-      case "Drupal": 
-        CRM_Contribpagealias_Drupal::pre($path, $alias, $pathParams);
-        break;
-      case "Drupal8":
-        CRM_Contribpagealias_Drupal8::pre($path, $alias, $pathParams);
-        break;
+    if (!empty($alias)) {
+      $path = 'civicrm/contribute/transact';
+      $pathParms = 'id=' . $event->id . '&reset=1';
+      // Switch on CMS version to call appropriate code
+      switch (CRM_Core_Config::singleton()->userFramework) {
+        case "Drupal": 
+          CRM_Contribpagealias_Drupal::pre($path, $alias, $pathParams);
+          break;
+        case "Drupal8":
+          CRM_Contribpagealias_Drupal8::pre($path, $alias, $pathParams);
+          break;
+      }
     }
   }
   return;
@@ -243,7 +245,7 @@ function contribpagealias_symfony_civicrm_validateForm($event) {
       if (!empty($path) && preg_match('/id=([0-9]+)/', $path, $matches)) {
         // If the alias is used for another form, throw an error
         if (!($event->form->getVar('_id') == $matches[1])) {
-          $event->errors['au-org-greens-contribpagealias__url_alias'] = ts('Alias already in use');
+          $event->errors['au-org-greens-contribpagealias__url_alias'] = E::ts('Alias already in use');
         }
       }
     }
