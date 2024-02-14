@@ -186,7 +186,7 @@ function contribpagealias_symfony_civicrm_pre($event) {
     $alias = $event->params['au-org-greens-contribpagealias__url_alias'];
     if (!empty($alias)) {
       $path = 'civicrm/contribute/transact';
-      $pathParms = 'id=' . $event->id . '&reset=1';
+      $pathParams = 'id=' . $event->id . '&reset=1';
       // Switch on CMS version to call appropriate code
       switch (CRM_Core_Config::singleton()->userFramework) {
         case "Drupal": 
